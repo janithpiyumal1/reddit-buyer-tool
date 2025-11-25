@@ -1,0 +1,286 @@
+.posts-table-container {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.table-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.btn-export {
+  padding: 0.75rem 1.5rem;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-export:hover {
+  background-color: #45a049;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.posts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.posts-table thead {
+  background-color: #f5f5f5;
+}
+
+.posts-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.posts-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: top;
+}
+
+.posts-table tr:hover {
+  background-color: #fafafa;
+}
+
+.posts-table tr.expanded {
+  background-color: #f5f5ff;
+}
+
+.subreddit-link {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.subreddit-link:hover {
+  text-decoration: underline;
+}
+
+.title-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.post-title {
+  color: #333;
+  text-decoration: none;
+  flex: 1;
+}
+
+.post-title:hover {
+  color: #667eea;
+  text-decoration: underline;
+}
+
+.btn-expand {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #666;
+  padding: 0;
+}
+
+.date-cell {
+  font-size: 0.85rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-buyer {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.badge-not-buyer {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.badge-unclassified {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.badge-saved {
+  background-color: #fff9c4;
+  color: #f57f17;
+}
+
+.badge-not-saved {
+  background-color: #f5f5f5;
+  color: #999;
+}
+
+.source-tag {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #999;
+}
+
+/* Expanded row */
+.expanded-row td {
+  background-color: #fafafa;
+  padding: 0;
+}
+
+.post-details {
+  padding: 1.5rem;
+  border-top: 2px solid #e0e0e0;
+}
+
+.post-details h4 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: #555;
+}
+
+.post-body {
+  background-color: white;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.6;
+}
+
+.post-meta {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.btn-page {
+  padding: 0.5rem 1rem;
+  background-color: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.btn-page:hover:not(:disabled) {
+  background-color: #5568d3;
+}
+
+.btn-page:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-weight: 600;
+  color: #555;
+}
+
+/* No posts message */
+.no-posts {
+  background: white;
+  padding: 3rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.no-posts p {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .posts-table {
+    font-size: 0.85rem;
+  }
+  
+  .posts-table th,
+  .posts-table td {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .table-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .posts-table thead {
+    display: none;
+  }
+  
+  .posts-table tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+  }
+  
+  .posts-table td {
+    display: block;
+    text-align: left;
+    padding: 0.5rem 1rem;
+    border: none;
+  }
+  
+  .posts-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    display: inline-block;
+    margin-right: 0.5rem;
+  }
+}
