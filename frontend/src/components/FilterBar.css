@@ -31,7 +31,8 @@
   font-size: 0.9rem;
 }
 
-.filter-group select {
+.filter-group select,
+.filter-group input[type="text"] {
   padding: 0.5rem;
   border: 2px solid #e0e0e0;
   border-radius: 6px;
@@ -41,7 +42,12 @@
   transition: border-color 0.3s;
 }
 
-.filter-group select:focus {
+.filter-group input[type="text"] {
+  cursor: text;
+}
+
+.filter-group select:focus,
+.filter-group input[type="text"]:focus {
   outline: none;
   border-color: #667eea;
 }

@@ -11,6 +11,17 @@ function FilterBar({ filters, subreddits, onFilterChange }) {
       <h3>🔎 Filters</h3>
       <div className="filter-controls">
         <div className="filter-group">
+          <label htmlFor="filter-search">Search Keywords:</label>
+          <input
+            type="text"
+            id="filter-search"
+            placeholder="Search in title and body..."
+            value={filters.search || ''}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
+          />
+        </div>
+
+        <div className="filter-group">
           <label htmlFor="filter-is-buyer">Classification:</label>
           <select
             id="filter-is-buyer"

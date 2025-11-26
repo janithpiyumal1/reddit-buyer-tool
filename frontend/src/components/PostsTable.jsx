@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import LeadControls from './LeadControls';
-import { exportLeads } from '../api';
+import { exportLeads, deleteAllPosts } from '../api';
 import './PostsTable.css';
 
 function PostsTable({ posts, loading, pagination, onPageChange, onPostUpdated }) {
@@ -17,6 +17,26 @@ function PostsTable({ posts, loading, pagination, onPageChange, onPostUpdated })
     } catch (error) {
       console.error('Error exporting leads:', error);
       alert('Failed to export leads');
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL posts? This action cannot be undone!')) {
+      return;
+    }
+    
+    // Double confirmation for safety
+    if (!window.confirm('This will permanently delete all fetched posts from the database. Are you absolutely sure?')) {
+      return;
+    }
+    
+    try {
+      const result = await deleteAllPosts();
+      alert(result.message || 'All posts deleted successfully!');
+      onPostUpdated();
+    } catch (error) {
+      console.error('Error deleting all posts:', error);
+      alert('Failed to delete all posts');
     }
   };
 
@@ -53,9 +73,14 @@ function PostsTable({ posts, loading, pagination, onPageChange, onPostUpdated })
     <div className="posts-table-container">
       <div className="table-header">
         <h2>📊 Posts ({pagination.total} total)</h2>
-        <button onClick={handleExport} className="btn-export">
-          📥 Export Saved Leads
-        </button>
+        <div className="table-actions">
+          <button onClick={handleExport} className="btn-export">
+            📥 Export Saved Leads
+          </button>
+          <button onClick={handleDeleteAll} className="btn-delete-all">
+            🗑️ Delete All Posts
+          </button>
+        </div>
       </div>
 
       <div className="table-responsive">

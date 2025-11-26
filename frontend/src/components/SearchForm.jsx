@@ -5,6 +5,7 @@ function SearchForm({ onFetch, disabled }) {
   const [keywords, setKeywords] = useState('');
   const [subreddits, setSubreddits] = useState('');
   const [limit, setLimit] = useState(100);
+  const [autoClassify, setAutoClassify] = useState(true);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -17,7 +18,7 @@ function SearchForm({ onFetch, disabled }) {
     const keywordList = keywords.split(',').map(k => k.trim()).filter(k => k);
     const subredditList = subreddits.split(',').map(s => s.trim()).filter(s => s);
 
-    onFetch(keywordList, subredditList, limit);
+    onFetch(keywordList, subredditList, limit, autoClassify);
   };
 
   return (
@@ -69,6 +70,20 @@ function SearchForm({ onFetch, disabled }) {
             disabled={disabled}
           />
           <small>Maximum number of posts to fetch (1-1000)</small>
+        </div>
+
+        <div className="form-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              id="autoClassify"
+              checked={autoClassify}
+              onChange={(e) => setAutoClassify(e.target.checked)}
+              disabled={disabled}
+            />
+            Auto-classify posts after fetching
+          </label>
+          <small>Automatically classify posts as buyer/not buyer during fetch</small>
         </div>
 
         <button type="submit" className="btn-primary" disabled={disabled}>

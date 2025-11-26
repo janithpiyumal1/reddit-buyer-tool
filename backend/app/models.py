@@ -12,13 +12,15 @@ class FetchRequest(BaseModel):
     keywords: List[str] = Field(..., min_length=1, description="List of keywords to search for")
     subreddits: Optional[List[str]] = Field(None, description="Optional list of subreddits to search in")
     limit: Optional[int] = Field(100, ge=1, le=1000, description="Maximum number of posts to fetch")
+    auto_classify: Optional[bool] = Field(False, description="Automatically classify posts after fetching")
     
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "keywords": ["looking for", "need help", "buying"],
                 "subreddits": ["forhire", "entrepreneur"],
-                "limit": 50
+                "limit": 50,
+                "auto_classify": False
             }
         }
     )
@@ -85,6 +87,7 @@ class FetchResponse(BaseModel):
     posts_fetched: int
     posts_stored: int
     duplicates_skipped: int
+    posts_classified: Optional[int] = Field(None, description="Number of posts classified (if auto_classify enabled)")
 
 
 class SaveLeadRequest(BaseModel):

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { classifyPost, savePostAsLead } from '../api';
+import { classifyPost, savePostAsLead, deletePost } from '../api';
 import './LeadControls.css';
 
 function LeadControls({ post, onUpdated }) {
@@ -10,9 +10,11 @@ function LeadControls({ post, onUpdated }) {
     
     setLoading(true);
     try {
-      await classifyPost(post.id, false);
-      alert('Post re-classified successfully!');
-      onUpdated();
+      const updatedPost = await classifyPost(post.id, false);
+      // Update the post in the parent component
+      if (onUpdated) {
+        onUpdated();
+      }
     } catch (error) {
       console.error('Error classifying post:', error);
       alert('Failed to classify post');
@@ -36,6 +38,25 @@ function LeadControls({ post, onUpdated }) {
     }
   };
 
+  const handleDelete = async () => {
+    if (loading) return;
+    
+    if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await deletePost(post.id);
+      onUpdated();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Failed to delete post');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="lead-controls">
       <button
@@ -53,6 +74,14 @@ function LeadControls({ post, onUpdated }) {
         title={post.saved_as_lead ? 'Remove from saved leads' : 'Save as lead'}
       >
         {post.saved_as_lead ? '⭐' : '☆'}
+      </button>
+      <button
+        onClick={handleDelete}
+        disabled={loading}
+        className="btn-action btn-delete"
+        title="Delete this post"
+      >
+        🗑️
       </button>
     </div>
   );

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Keyword Search</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        input { padding: 8px; width: 300px; margin-right: 10px; }
+        button { padding: 8px 15px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Test Keyword Search</h1>
+    
+    <div>
+        <input type="text" id="keyword" placeholder="Enter keyword (e.g., hiring)" value="hiring">
+        <button onclick="searchPosts()">Search</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        async function searchPosts() {
+            const keyword = document.getElementById('keyword').value;
+            const resultsDiv = document.getElementById('results');
+            
+            resultsDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch(`http://localhost:8000/api/posts?search=${encodeURIComponent(keyword)}`);
+                const data = await response.json();
+                
+                resultsDiv.innerHTML = `
+                    <h2>Results for "${keyword}":</h2>
+                    <p><strong>Total posts found: ${data.total}</strong></p>
+                    <hr>
+                `;
+                
+                if (data.posts && data.posts.length > 0) {
+                    data.posts.forEach(post => {
+                        resultsDiv.innerHTML += `
+                            <div class="result">
+                                <h3>${post.title}</h3>
+                                <p><strong>Subreddit:</strong> r/${post.subreddit}</p>
+                                <p><strong>Author:</strong> ${post.author}</p>
+                                <p><strong>URL:</strong> <a href="${post.url}" target="_blank">${post.url.substring(0, 60)}...</a></p>
+                            </div>
+                        `;
+                    });
+                } else {
+                    resultsDiv.innerHTML += '<p>No posts found</p>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error('Error:', error);
+            }
+        }
+        
+        // Auto-search on load
+        window.onload = () => searchPosts();
+    </script>
+</body>
+</html>

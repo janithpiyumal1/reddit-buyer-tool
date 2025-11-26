@@ -10,6 +10,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [fetchProgress, setFetchProgress] = useState(null);
   const [filters, setFilters] = useState({
+    search: '',
     is_buyer: '',
     subreddit: '',
     saved_as_lead: '',
@@ -24,7 +25,7 @@ function App() {
   });
   const [subreddits, setSubreddits] = useState([]);
 
-  // Load posts on component mount and when filters change
+  // Load posts whenever filters change so users can see new data immediately
   useEffect(() => {
     loadPosts();
   }, [filters]);
@@ -36,8 +37,10 @@ function App() {
 
   const loadPosts = async () => {
     setLoading(true);
+    console.log('Loading posts with filters:', filters);
     try {
       const data = await getPosts(filters);
+      console.log('Received posts data:', data);
       setPosts(data.posts);
       setPagination({
         total: data.total,
@@ -62,16 +65,21 @@ function App() {
     }
   };
 
-  const handleFetch = async (keywords, selectedSubreddits, limit) => {
+  const handleFetch = async (keywords, selectedSubreddits, limit, autoClassify) => {
     setLoading(true);
     setFetchProgress({ status: 'fetching', message: 'Fetching posts from Reddit...' });
 
     try {
-      const result = await fetchPosts({ keywords, subreddits: selectedSubreddits, limit });
+      const result = await fetchPosts({ keywords, subreddits: selectedSubreddits, limit, auto_classify: autoClassify });
+      
+      let message = `Fetched ${result.posts_fetched} posts, stored ${result.posts_stored} new posts, skipped ${result.duplicates_skipped} duplicates.`;
+      if (result.posts_classified !== undefined) {
+        message += ` Classified ${result.posts_classified} posts.`;
+      }
       
       setFetchProgress({
         status: 'success',
-        message: `Fetched ${result.posts_fetched} posts, stored ${result.posts_stored} new posts, skipped ${result.duplicates_skipped} duplicates.`,
+        message: message,
       });
 
       // Reload posts to show new data

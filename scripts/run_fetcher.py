@@ -58,6 +58,12 @@ def parse_args():
         help="Time filter for Reddit search (default: week)"
     )
     
+    parser.add_argument(
+        "--auto-classify",
+        action="store_true",
+        help="Automatically classify posts after fetching (combines fetch + classify in one step)"
+    )
+    
     return parser.parse_args()
 
 
@@ -81,6 +87,7 @@ def main():
     print(f"Subreddits: {subreddits or 'ALL'}")
     print(f"Limit: {args.limit}")
     print(f"Time filter: {args.time_filter}")
+    print(f"Auto-classify: {args.auto_classify}")
     print("-" * 70)
     
     try:
@@ -93,7 +100,8 @@ def main():
             db_connection=db_connection,
             keywords=keywords,
             subreddits=subreddits,
-            limit=args.limit
+            limit=args.limit,
+            auto_classify=args.auto_classify
         )
         
         # Print results
@@ -103,6 +111,8 @@ def main():
         print(f"✅ Posts fetched from Reddit: {stats['fetched']}")
         print(f"💾 Posts stored in database: {stats['stored']}")
         print(f"⏭️  Duplicates skipped: {stats['duplicates']}")
+        if args.auto_classify:
+            print(f"🧠 Posts classified: {stats['classified']}")
         print(f"Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("=" * 70)
         

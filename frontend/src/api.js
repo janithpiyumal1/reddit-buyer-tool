@@ -21,12 +21,14 @@ const api = axios.create({
  * @param {string[]} params.keywords - Array of keywords
  * @param {string[]} [params.subreddits] - Optional array of subreddits
  * @param {number} [params.limit] - Max posts to fetch
+ * @param {boolean} [params.auto_classify] - Auto-classify posts after fetching
  */
-export const fetchPosts = async ({ keywords, subreddits, limit }) => {
+export const fetchPosts = async ({ keywords, subreddits, limit, auto_classify }) => {
   const response = await api.post('/fetch', {
     keywords,
     subreddits: subreddits && subreddits.length > 0 ? subreddits : undefined,
     limit: limit || 100,
+    auto_classify: auto_classify !== undefined ? auto_classify : false,
   });
   return response.data;
 };
@@ -38,14 +40,21 @@ export const fetchPosts = async ({ keywords, subreddits, limit }) => {
 export const getPosts = async (filters = {}) => {
   const params = new URLSearchParams();
   
+  if (filters.search && filters.search.trim() !== '') {
+    params.append('search', filters.search.trim());
+  }
   if (filters.is_buyer !== undefined && filters.is_buyer !== null && filters.is_buyer !== '') {
-    params.append('is_buyer', filters.is_buyer);
+    // Convert string "true"/"false" to actual boolean
+    const isBuyerValue = filters.is_buyer === 'true' ? true : filters.is_buyer === 'false' ? false : filters.is_buyer;
+    params.append('is_buyer', isBuyerValue);
   }
   if (filters.subreddit) {
     params.append('subreddit', filters.subreddit);
   }
   if (filters.saved_as_lead !== undefined && filters.saved_as_lead !== null && filters.saved_as_lead !== '') {
-    params.append('saved_as_lead', filters.saved_as_lead);
+    // Convert string "true"/"false" to actual boolean
+    const savedAsLeadValue = filters.saved_as_lead === 'true' ? true : filters.saved_as_lead === 'false' ? false : filters.saved_as_lead;
+    params.append('saved_as_lead', savedAsLeadValue);
   }
   if (filters.page) {
     params.append('page', filters.page);
@@ -54,7 +63,12 @@ export const getPosts = async (filters = {}) => {
     params.append('page_size', filters.page_size);
   }
   
-  const response = await api.get(`/posts?${params.toString()}`);
+  const url = `/posts?${params.toString()}`;
+  console.log('API Request URL:', url);
+  console.log('Filters:', filters);
+  
+  const response = await api.get(url);
+  console.log('API Response:', response.data);
   return response.data;
 };
 
@@ -79,6 +93,23 @@ export const savePostAsLead = async (postId, saved) => {
   const response = await api.post(`/save_lead/${postId}`, {
     saved,
   });
+  return response.data;
+};
+
+/**
+ * Delete a post
+ * @param {number} postId - Post ID
+ */
+export const deletePost = async (postId) => {
+  const response = await api.delete(`/posts/${postId}`);
+  return response.data;
+};
+
+/**
+ * Delete all posts
+ */
+export const deleteAllPosts = async () => {
+  const response = await api.delete('/posts');
   return response.data;
 };
 

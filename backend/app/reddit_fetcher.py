@@ -526,21 +526,24 @@ def fetch_and_store(
     db_connection,
     keywords: List[str],
     subreddits: Optional[List[str]] = None,
-    limit: int = 100
+    limit: int = 100,
+    auto_classify: bool = False
 ) -> Dict[str, int]:
     """
     Fetch posts from Reddit RSS and store in database.
+    Optionally classify them immediately.
     
     Args:
         db_connection: MySQL database connection
         keywords: List of keywords to search
         subreddits: Optional list of subreddits
         limit: Maximum posts to fetch
+        auto_classify: If True, classify posts immediately after storing
     
     Returns:
-        Dict with statistics: {fetched, stored, duplicates}
+        Dict with statistics: {fetched, stored, duplicates, classified}
     """
-    from app.db import insert_reddit_post
+    from app.db import insert_reddit_post, update_classification, add_post_keyword
     
     # Fetch posts via RSS
     posts_data = search_reddit(keywords, subreddits, limit)
@@ -549,7 +552,13 @@ def fetch_and_store(
         "fetched": len(posts_data),
         "stored": 0,
         "duplicates": 0,
+        "classified": 0,
     }
+    
+    # Import classifier only if needed
+    if auto_classify:
+        from app.classifier import classify_post
+        logger.info("Auto-classification enabled - will classify posts during fetch")
     
     # Store each post
     for post_data in posts_data:
@@ -565,8 +574,38 @@ def fetch_and_store(
             metadata=post_data.get("metadata", {})
         )
         
-        if post_id > 0:
+        if post_id is not None and post_id > 0:
             stats["stored"] += 1
+            
+            # Store keywords that found this post
+            for keyword in keywords:
+                try:
+                    add_post_keyword(db_connection, post_id, keyword)
+                except Exception as e:
+                    logger.warning(f"Failed to store keyword '{keyword}' for post {post_id}: {e}")
+            
+            # Auto-classify if enabled
+            if auto_classify:
+                try:
+                    is_buyer, confidence, reason, source = classify_post(
+                        title=post_data["title"],
+                        body=post_data.get("body", ""),
+                        metadata=post_data.get("metadata", {})
+                    )
+                    
+                    update_classification(
+                        db=db_connection,
+                        post_id=post_id,
+                        is_buyer=is_buyer,
+                        classification_source=source,
+                        classification_score=confidence
+                    )
+                    
+                    stats["classified"] += 1
+                    logger.info(f"Classified post {post_id}: is_buyer={is_buyer}, score={confidence:.2f}, source={source}")
+                    
+                except Exception as e:
+                    logger.error(f"Failed to classify post {post_id}: {e}")
         else:
             stats["duplicates"] += 1
     

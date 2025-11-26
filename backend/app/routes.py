@@ -19,7 +19,8 @@ from app.models import (
 )
 from app.db import (
     get_posts, get_post_by_id, update_classification,
-    save_post_as_lead, get_saved_leads, get_subreddits_list
+    save_post_as_lead, get_saved_leads, get_subreddits_list,
+    get_posts_by_keywords, delete_post, delete_all_posts
 )
 from app.reddit_fetcher import fetch_and_store
 from app.classifier import classify_post
@@ -39,21 +40,29 @@ async def fetch_posts(
     - **keywords**: List of keywords to search for (required)
     - **subreddits**: Optional list of subreddit names
     - **limit**: Maximum number of posts to fetch (default: 100)
+    - **auto_classify**: Automatically classify posts after fetching (default: False)
     """
     try:
         stats = fetch_and_store(
             db_connection=db,
             keywords=request.keywords,
             subreddits=request.subreddits,
-            limit=request.limit or 100
+            limit=request.limit or 100,
+            auto_classify=request.auto_classify or False
         )
         
-        return FetchResponse(
-            message="Fetch completed successfully",
-            posts_fetched=stats["fetched"],
-            posts_stored=stats["stored"],
-            duplicates_skipped=stats["duplicates"]
-        )
+        response_data = {
+            "message": "Fetch completed successfully",
+            "posts_fetched": stats["fetched"],
+            "posts_stored": stats["stored"],
+            "duplicates_skipped": stats["duplicates"]
+        }
+        
+        # Only include posts_classified if auto_classify was enabled
+        if request.auto_classify:
+            response_data["posts_classified"] = stats["classified"]
+        
+        return FetchResponse(**response_data)
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Fetch failed: {str(e)}")
@@ -64,6 +73,7 @@ async def list_posts(
     is_buyer: Optional[bool] = Query(None, description="Filter by buyer classification"),
     subreddit: Optional[str] = Query(None, description="Filter by subreddit"),
     saved_as_lead: Optional[bool] = Query(None, description="Filter by saved lead status"),
+    search: Optional[str] = Query(None, description="Search in title and body"),
     date_from: Optional[datetime] = Query(None, description="Filter posts created after this date"),
     date_to: Optional[datetime] = Query(None, description="Filter posts created before this date"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -78,18 +88,41 @@ async def list_posts(
     Returns paginated list of posts with metadata.
     """
     try:
-        posts, total = get_posts(
-            db=db,
-            is_buyer=is_buyer,
-            subreddit=subreddit,
-            saved_as_lead=saved_as_lead,
-            date_from=date_from,
-            date_to=date_to,
-            page=page,
-            page_size=page_size,
-            sort_by=sort_by,
-            sort_order=sort_order
-        )
+        # If search param is provided, use keyword-based search from post_keywords table
+        # Otherwise use text search in title/body
+        if search:
+            # Split search string into keywords
+            keywords = [kw.strip() for kw in search.split(',') if kw.strip()]
+            
+            # Use keyword-based search (exact match from post_keywords table)
+            posts, total = get_posts_by_keywords(
+                db=db,
+                keywords=keywords,
+                is_buyer=is_buyer,
+                subreddit=subreddit,
+                saved_as_lead=saved_as_lead,
+                date_from=date_from,
+                date_to=date_to,
+                page=page,
+                page_size=page_size,
+                sort_by=sort_by,
+                sort_order=sort_order
+            )
+        else:
+            # Use standard search (text search in title/body or all posts if no filters)
+            posts, total = get_posts(
+                db=db,
+                is_buyer=is_buyer,
+                subreddit=subreddit,
+                saved_as_lead=saved_as_lead,
+                search=None,  # Don't use text search since we're doing keyword-based
+                date_from=date_from,
+                date_to=date_to,
+                page=page,
+                page_size=page_size,
+                sort_by=sort_by,
+                sort_order=sort_order
+            )
         
         # Convert to PostResponse models
         post_responses = [
@@ -126,7 +159,7 @@ async def list_posts(
         raise HTTPException(status_code=500, detail=f"Failed to fetch posts: {str(e)}")
 
 
-@router.post("/classify/{post_id}", response_model=MessageResponse, tags=["Classification"])
+@router.post("/classify/{post_id}", response_model=PostResponse, tags=["Classification"])
 async def classify_post_endpoint(
     post_id: int,
     request: ClassifyRequest = ClassifyRequest(),
@@ -165,9 +198,24 @@ async def classify_post_endpoint(
         if not success:
             raise HTTPException(status_code=500, detail="Failed to update classification")
         
-        return MessageResponse(
-            message=f"Post classified as {'buyer' if is_buyer else 'not buyer'} (source: {source}, score: {confidence:.2f})",
-            success=True
+        # Get the updated post to return
+        updated_post = get_post_by_id(db, post_id)
+        
+        return PostResponse(
+            id=updated_post['id'],
+            reddit_id=updated_post['reddit_id'],
+            subreddit=updated_post['subreddit'],
+            title=updated_post['title'],
+            body=updated_post['body'],
+            author=updated_post['author'],
+            created_utc=updated_post['created_utc'],
+            url=updated_post['url'],
+            fetched_at=updated_post['fetched_at'],
+            is_buyer=bool(updated_post['is_buyer']) if updated_post['is_buyer'] is not None else None,
+            classification_source=updated_post['classification_source'],
+            classification_score=updated_post['classification_score'],
+            metadata=updated_post['metadata'],
+            saved_as_lead=bool(updated_post['saved_as_lead'])
         )
         
     except HTTPException:
@@ -266,6 +314,62 @@ async def export_leads(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+
+
+@router.delete("/posts/{post_id}", response_model=MessageResponse, tags=["Posts"])
+async def delete_post_endpoint(
+    post_id: int,
+    db: PooledMySQLConnection = Depends(get_db_connection)
+):
+    """
+    Delete a specific post from the database.
+    
+    - **post_id**: Database ID of the post to delete
+    """
+    try:
+        # Check if post exists
+        post = get_post_by_id(db, post_id)
+        
+        if not post:
+            raise HTTPException(status_code=404, detail=f"Post {post_id} not found")
+        
+        # Delete the post
+        success = delete_post(db, post_id)
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to delete post")
+        
+        return MessageResponse(
+            message=f"Post {post_id} deleted successfully",
+            success=True
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+
+
+@router.delete("/posts", response_model=MessageResponse, tags=["Posts"])
+async def delete_all_posts_endpoint(
+    db: PooledMySQLConnection = Depends(get_db_connection)
+):
+    """
+    Delete all posts from the database.
+    
+    Warning: This action cannot be undone!
+    """
+    try:
+        # Delete all posts
+        deleted_count = delete_all_posts(db)
+        
+        return MessageResponse(
+            message=f"Successfully deleted {deleted_count} posts",
+            success=True
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Delete all failed: {str(e)}")
 
 
 @router.get("/subreddits", tags=["Metadata"])

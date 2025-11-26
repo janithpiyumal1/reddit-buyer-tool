@@ -51,3 +51,11 @@
 .btn-unsave:hover:not(:disabled) {
   background-color: #fff176;
 }
+
+.btn-delete {
+  background-color: #ffebee;
+}
+
+.btn-delete:hover:not(:disabled) {
+  background-color: #ffcdd2;
+}
